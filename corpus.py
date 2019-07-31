@@ -1,4 +1,3 @@
-# import xml.etree.ElementTree as ET
 import lxml.etree as ET
 import os
 import sys
@@ -17,11 +16,11 @@ with open('stopwords.txt', 'r') as stops:
 
 
 def log_likelihood_ratio(k1, n1, k2, n2):
+    ''' Note: llr is -2log(lambda), which is roughly chi-squared > 10.8 '''
     p1 = k1 / n1
     p2 = k2 / n2
     p = (k1 + k2) / (n1 + n2)
     llr = 2 * (logL(p1, k1, n1) + logL(p2, k2, n2) - logL(p, k1, n1) - logL(p, k2, n2))
-    # llr is -2log(lambda), which is roughly chi-squared > 10.8
     return llr
 
 def logL(p,k,n):
@@ -183,7 +182,12 @@ class Models(object):
         return self.bigram
 
 def main():
+    ''' Run a demo keyphrase analysis on article. '''
+    
     logging.basicConfig(level=logging.INFO)
+
+    test_article = r'/media/ryan/ExtraDrive1/data/PubMed/Addict_Health/PMC4137445.nxml'
+
     corp = Corpus()
     my_models = Models()
     my_models.train(corp)
@@ -193,18 +197,14 @@ def main():
     and MIF genotypes in patients scheduled for elective single or complex surgical procedures such as coronary artery bypass grafting or valve replacement.'''
 
     sample_toks = [tok for sent in TextBlob(sample).sentences for tok in sent.tokens]
-    print(my_models.get_bigram()[sample_toks])
+    logging.debug(my_models.get_bigram()[sample_toks])
 
     threshold = 10.8
-
-    # TODO: load test document
-    # article = extract_article(r'/media/ryan/ExtraDrive1/data/PubMed/ACS_Sustain_Chem_Eng/PMC5027642.nxml')
-    # article = extract_article(r'/media/ryan/ExtraDrive1/data/PubMed/Addict_Health/PMC5422016.nxml')
-    article = extract_article(r'/media/ryan/ExtraDrive1/data/PubMed/Addict_Health/PMC4137445.nxml')
+    article = extract_article(test_article)
 
     body = TextBlob(article.get_abstract() + "\n" + article.get_body())
 
-    print(article.get_title())
+    logging.info(article.get_title())
     title_tokens =  [tok for tok in TextBlob(article.get_title()).tokens if tok not in stopwords]
     title_tokens = my_models.get_bigram()[title_tokens]
 
@@ -215,7 +215,6 @@ def main():
     scored = set()
     signature_terms = set()
     for token in doc_tokens:
-        # logging.info("Score: '%s'" % token)
         k1 = doc_count[token]
         n1 = len(doc_tokens)
         k2 = my_models.get_background().get_count(token)
