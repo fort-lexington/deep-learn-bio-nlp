@@ -30,7 +30,7 @@ def logL(p,k,n):
 class Corpus(object):
     ''' Streamable corpus object (only reads one file into memory at a time). '''
 
-    def __init__(self, root=r'/media/ryan/ExtraDrive1/data/PubMed'):
+    def __init__(self, root=r'/media/ryan/ExtraDrive1/PMC/XML/'):
         self.path_list = list()
         for dir_path, _, file_names in os.walk(root):
             for file in [f for f in file_names if f.endswith('.nxml')]:
@@ -40,12 +40,34 @@ class Corpus(object):
         return len(self.path_list)
 
     def __iter__(self):
+        ''' Yield one sentence at a time (as a list of tokens) '''
         for path in self.path_list:
             logging.info(path)
             art_text = extract_article(path).get_text()
             for sent in TextBlob(art_text).sentences:
-                yield [tok for tok in sent.tokens]
+                yield [tok for tok in sent.words] # sent.tokens includes punctuation
 
+class DocumentCorpus(object):
+    ''' Streamable corpus object (only reads one file into memory at a time). '''
+
+    def __init__(self, root=r'/media/ryan/ExtraDrive1/PMC/XML/'):
+        self.path_list = list()
+        for dir_path, _, file_names in os.walk(root):
+            for file in [f for f in file_names if f.endswith('.nxml')]:
+                self.path_list.append(os.path.join(dir_path, file))
+
+    def file_count(self):
+        return len(self.path_list)
+
+    def __iter__(self):
+        ''' Yield one document at a time (as a list of tokens) '''
+        for path in self.path_list:
+            logging.info(path)
+            art_text = extract_article(path).get_text()
+            art_tokens = []
+            for sent in TextBlob(art_text).sentences:
+                art_tokens.extend(tok for tok in sent.words)
+            yield(art_tokens)
 
 class Article(object):
     ''' Container for text extracted from *.nxml files. See 'extract_article'. '''
@@ -186,7 +208,7 @@ def main():
     
     logging.basicConfig(level=logging.INFO)
 
-    test_article = r'/media/ryan/ExtraDrive1/data/PubMed/Addict_Health/PMC4137445.nxml'
+    test_article = r'/media/ryan/ExtraDrive1/PMC/XML/non_comm_use.A-B.xml/Addict_Health/PMC4137445.nxml'
 
     corp = Corpus()
     my_models = Models()
