@@ -17,7 +17,7 @@ with open('corpus.txt', 'w') as output:
 ### Vocabulary
 
 ```bash
-(mlenv) ryan@ryan-Wild-Dog-Pro:~/Development/GloVe-1.2/build$ ./vocab_count -max-vocab 150000 -min-count 10 < ../../deep-learn-bio-nlp/corpus.txt > ../../deep-learn-bio-nlp/vocab.txt
+$ ./vocab_count -max-vocab 150000 -min-count 10 < ../../deep-learn-bio-nlp/corpus.txt > ../../deep-learn-bio-nlp/vocab.txt
 BUILDING VOCABULARY
 Processed 1784578956 tokens.
 Counted 10367082 unique words.
@@ -28,7 +28,7 @@ Using vocabulary of size 150000.
 ### Count Cooccurrences
 
 ```bash
-(mlenv) ryan@ryan-Wild-Dog-Pro:~/Development/GloVe-1.2/build$ ./cooccur -window-size 10 -vocab-file ../../deep-learn-bio-nlp/vocab.txt < ../../deep-learn-bio-nlp/corpus.txt > ../../deep-learn-bio-nlp/cooccurrences.bin
+$ ./cooccur -window-size 10 -vocab-file ../../deep-learn-bio-nlp/vocab.txt < ../../deep-learn-bio-nlp/corpus.txt > ../../deep-learn-bio-nlp/cooccurrences.bin
 COUNTING COOCCURRENCES
 window size: 10
 context: symmetric
@@ -44,7 +44,7 @@ Merging cooccurrence files: processed 902142042 lines.
 ### Shuffle
 
 ```bash
-(mlenv) ryan@ryan-Wild-Dog-Pro:~/Development/GloVe-1.2/build$ ./shuffle -verbose 0  < ../../deep-learn-bio-nlp/cooccurrences.bin > ../../deep-learn-bio-nlp/cooccurrences.shuf.bin
+$ ./shuffle -verbose 0  < ../../deep-learn-bio-nlp/cooccurrences.bin > ../../deep-learn-bio-nlp/cooccurrences.shuf.bin
 SHUFFLING COOCCURRENCES
 Merging temp files: processed 902142042 lines.
 ```
@@ -52,7 +52,7 @@ Merging temp files: processed 902142042 lines.
 ### GloVe Training
 
 ```bash
-(mlenv) ryan@ryan-Wild-Dog-Pro:~/Development/deep-learn-bio-nlp$ ../GloVe-1.2/build/glove -input-file cooccurrences.shuf.bin -vocab-file vocab.txt 
+$ ../GloVe-1.2/build/glove -input-file cooccurrences.shuf.bin -vocab-file vocab.txt 
 TRAINING MODEL
 Read 902142042 lines.
 Initializing parameters...done.
