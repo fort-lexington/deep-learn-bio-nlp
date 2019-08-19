@@ -11,6 +11,7 @@ class BC2Reader(object):
         self.gene_eval = gene_eval
         self.mentions = defaultdict(list)
         self.nlplib = spacy.load('en')
+        self.vocab = set([])
         self._load_eval()
 
     def _load_eval(self):
@@ -30,6 +31,7 @@ class BC2Reader(object):
                 text = line[15:-1]
                 token_bounds = self._offset_format(text)
                 tokens = [x[0] for x in token_bounds]
+                self.vocab.update(tokens)
                 labels = self.convert_bio(sent_id, token_bounds)
                 # formatted.append((sent_id, list(zip(tokens, labels))))
                 formatted.append((sent_id, tokens, labels))
