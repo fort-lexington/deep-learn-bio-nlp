@@ -1,6 +1,6 @@
 import json
 import spacy
-from collections import defaultdict
+from collections import Counter, defaultdict
 import spacy as nlp
 import logging
 
@@ -11,7 +11,7 @@ class BC2Reader(object):
         self.gene_eval = gene_eval
         self.mentions = defaultdict(list)
         self.nlplib = spacy.load('en')
-        self.vocab = set([])
+        self.vocab = Counter()
         self._load_eval()
 
     def _load_eval(self):

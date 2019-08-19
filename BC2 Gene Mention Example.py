@@ -18,7 +18,7 @@
 # P00001606T0076|14 33|alkaline phosphatases
 # P00001606T0076|37 50|5-nucleotidase
 # ```
-# The first field (delimied by the bar symbols) is the matching sentence ID. The second field contains the offset of the first and last characters in the GM, *not counting space characters*. So, looking at *alkaline phosphatases*, the first letter *a* is at offset 14 keeping in mind that the first character in the sentence is offset 0. If you are not careful, you may think the offset of *a* is 16, but remember that spaces are not counted. Counting in a similar way, the last *s* in *phosphatases* is at offset 33.
+# The first field (delimited by the bar symbols) is the matching sentence ID. The second field contains the offset of the first and last characters in the GM, _not counting space characters_. So, looking at _alkaline phosphatases_, the first letter `a` is at offset 14 keeping in mind that the first character in the sentence is offset 0. If you are not careful, you may think the offset of `a` is 16, but remember that spaces are not counted. Counting in a similar way, the last `s` in _phosphatases_ is at offset 33.
 # 
 # ## Prepare the training data
 # 
@@ -33,7 +33,12 @@ from bc2reader import BC2Reader
 train_home = '/home/ryan/Development/deep-learn-bio-nlp/bc2/bc2geneMention/train'
 reader = BC2Reader('{0}/train.in'.format(train_home), '{0}/GENE.eval'.format(train_home))
 reader.convert('{0}/train.json'.format(train_home))
-vocab = list(reader.vocab) # it's a set
+# vocab = [a for a, b in reader.vocab.items() if b >= 3] # Let's see the word at least 3 times
+vocab = [a for a, _ in reader.vocab.items()] 
+
+
+#%%
+print("Size of vocabulary: {0}".format(len(vocab)))
 
 #%% [markdown]
 # This will generate a JSON file with a more familiar format. Here is the first sentence in our BIO format:
@@ -73,9 +78,9 @@ from keras.layers import LSTM, Embedding, Dense
 from keras.layers import TimeDistributed, Dropout, Bidirectional
 
 max_len = 200
-lstm_n = 128
-batch_n = 48
-epoch_n = 3
+lstm_n = 256
+batch_n = 64
+epoch_n = 4
 
 word2idx = {word: idx + 2 for idx, word in enumerate(vocab)}
 word2idx['_PAD_'] = 0
@@ -107,18 +112,37 @@ y_test = [to_categorical(i, num_classes=3) for i in y_test]
 
 input = Input(shape=(max_len,))
  
-model = Embedding(input_dim=len(vocab), output_dim=lstm_n, input_length=max_len)(input)
-model = Dropout(0.2)(model)
+model = Embedding(input_dim=len(vocab), output_dim=lstm_n, input_length=max_len, mask_zero=True)(input)
 model = Bidirectional(LSTM(units=lstm_n, return_sequences=True, recurrent_dropout=0.1))(model)
+model = Dropout(0.2)(model)
 
 out = TimeDistributed(Dense(n_tags, activation="softmax"))(model)
 model = Model(input, out)
  
 model.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["accuracy"])
-history = model.fit(X, np.array(y), batch_size=batch_n, epochs=epoch_n, validation_split=0.10, verbose=1)
+model.summary()
 
 #%% [markdown]
-# ## Test Set
+# ### Review the training history
+
+#%%
+history = model.fit(X, np.array(y), batch_size=batch_n, epochs=epoch_n, validation_split=0.10, verbose=1)
+
+import matplotlib.pyplot as plt
+loss = history.history['loss']
+val_loss = history.history['val_loss']
+epochs = range(1, len(loss) + 1)
+
+plt.plot(epochs, loss, 'bo', label='Training loss')
+plt.plot(epochs, val_loss, 'b', label='Validation loss')
+plt.title('Training and validation loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.legend()
+plt.show()
+
+#%% [markdown]
+# ## Test set evaluation
 
 #%%
 pred = model.predict(X_test)
@@ -157,11 +181,12 @@ with open('{0}/ryan_eval.eval'.format(test_home), 'w') as mention_fh:
             running_count += len(token)
 
 #%% [markdown]
-# Using the BCII evaluation script, initial output on the test data is mixed. The precision is in the range of the shared task participants, but the recall leaves something to be desired (see https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2559986/):
-#     
-#     TP: 3122
-#     FP: 668
-#     FN: 3209
-#     Precision: 0.823746701846966 Recall: 0.493129047543832 F: 0.616935085465863
+# Using the BCII evaluation script, initial output on the test data is mixed. The precision is in the range of the shared task participants, but the recall leaves something to be desired (see https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2559986/). The recall tends to have high variance depending on changes to the hyperparameters:
 # 
+#     TP: 3875
+#     FP: 1025
+#     FN: 2456
+#     Precision: 0.790816326530612 Recall: 0.612067603854051 F: 0.690054313952453
+# 
+# Next steps...
 
