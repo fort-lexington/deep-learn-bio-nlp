@@ -7,7 +7,7 @@
 # 
 # ## Training Data
 # 
-# The training data is described in the corpus README.GM file, but I'll describe it here as well. Training data consists of a sentences file `train.in` and a label file `GENE.eval` while lists the offsets of any gene mentions (there may be none for any sentence). It is easiest to understand using an example using the first sentence from `train.in`:
+# The training data is described in the corpus README.GM file, but I'll describe it here as well. Training data consists of a sentences file `train.in` and a label file `GENE.eval`. The eval file lists the offsets of any gene mentions (there may be none for any sentence). It is easiest to understand using an example using the first sentence from `train.in`:
 # 
 # ```
 # P00001606T0076 Comparison with alkaline phosphatases and 5-nucleotidase
@@ -22,9 +22,9 @@
 # 
 # ## Prepare the training data
 # 
-# The format is not very convenient for training our ML model. One method used to train NER systems to label each sentence token with either 'B','I', or 'O' where 'B' marks the beginning token in an entity, 'I' marks subsequent tokens in a multi-token entity (*inside*), and 'O' is for tokens *outside* the entity.
+# This format is not very convenient for training our ML model. One method used to train NER systems is to label each sentence token with either 'B','I', or 'O' where 'B' marks the beginning token in an entity, 'I' marks subsequent tokens in a multi-token entity (*inside*), and 'O' is for tokens *outside* the entity. For this example, we will use a Keras model to perform _sequence tagging_, where the tags are 'B', 'I', and 'O'. This is very similar to how one would perform full NER or POS tagging.
 # 
-# The module *bc2reader.py* will help convert these two files to something more usable. The first argument to the `BC2Reader` contructor is the sentence file. The second is the gene mention file 
+# The module *bc2reader.py* is provided to help convert these two files to something more usable. The first argument to the `BC2Reader` contructor is the sentence file. The second is the gene mention file.
 # 
 
 #%%
@@ -58,6 +58,8 @@ print(list(zip(training_data[0][1], training_data[0][2])))
 
 #%% [markdown]
 # ## Prepare the test data
+# 
+# The same _bc2reader_ is used to format the test file.
 
 #%%
 test_home = '/home/ryan/Development/deep-learn-bio-nlp/bc2/bc2GNandGMgold_Subs/sourceforgeDistrib-22-Sept-07/genemention/BC2GM/test'
@@ -118,7 +120,7 @@ y_test = [to_categorical(i, num_classes=n_tags) for i in y_test]
 # 
 # The embeddings loaded below were learned from PMC Open Access dataset (non-commercial). This collection contains 430,944 journal articles in XML (or text) format. The XML alone is over 50GB uncompressed, so only download if you have plenty of drive space and time. Tables were filtered out since they tended to contain numeric data and not narrative text. The final cleaned text is 1,784,578,876 tokens, and 958,634 lines of text!
 # 
-# Using the pre-trained embeddings on biomedical journal articles didn't improve the accuracy over learning embeddings directly from the training data, but it is useful to demonstrate how these can be added to the model. Run the code below to load the pre-trained PMC embeddings. You will need to add `weights=[embedding_matrix]` and `trainable=False` as arguments to the model's Embedding layer.
+# This first attempt at using pre-trained embeddings from biomedical journal articles didn't improve the accuracy over learning embeddings directly from the training data, but it is useful to demonstrate how these can be added to the model. Run the code below to load the pre-trained PMC embeddings. You will need to add `weights=[embedding_matrix]` and `trainable=False` as arguments to the model's Embedding layer.
 
 #%%
 embeddings_dir = r'/home/ryan/Development/deep-learn-bio-nlp/'
@@ -217,7 +219,7 @@ pred_index = np.argmax(pred, axis=-1)
 print(pred_index.shape)
 
 #%% [markdown]
-# The following code with convert the output of the tagger back to the original BCII format.
+# The following code converts the output of the tagger (where each term is BIO tagged) back to the original BCII format.
 
 #%%
 from collections import defaultdict
@@ -251,5 +253,5 @@ with open('{0}/ryan_eval.eval'.format(test_home), 'w') as mention_fh:
 #     FN: 2189
 #     Precision: 0.804271844660194 Recall: 0.654241036171221 F: 0.721539935545684
 # 
-# This F score isn't great, although it does place this system above the bottom 3 of 19 participants in the 2008 competition. Nonetheless, _only_ the training data was used (what the task describes as a _closed_ system), not using any outside resources. This is a good starting point.
+# This F score isn't great, although it does place this system above the bottom 3 of 19 participants in the 2008 competition. Note that _only_ the training data was used (what the task describes as a _closed_ system), not using any outside resources. This is a good starting point.
 
