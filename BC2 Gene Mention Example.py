@@ -75,10 +75,11 @@ with open('{0}/test.json'.format(test_home), 'r') as json_file:
 
 #%%
 import numpy as np
+from collections import Counter
 from keras.preprocessing.sequence import pad_sequences
 from keras.utils import to_categorical
 from keras.models import Model, Input
-from keras.layers import LSTM, Embedding, Dense, GRU
+from keras.layers import LSTM, Embedding, Dense, GRU, ConvLSTM2D
 from keras.layers import TimeDistributed, Dropout, Bidirectional
 
 max_len = 150
@@ -89,11 +90,21 @@ epoch_n = 3
 word2idx = {word: idx + 2 for idx, word in enumerate(vocab)}
 word2idx['_PAD_'] = 0
 word2idx['_OOV_'] = 1
+
 tag2idx = {'O': 0, 'B': 1, 'I': 2}
 n_tags = len(tag2idx)
 
 X = [[word2idx.get(m, 1) for m in row[1]] for row in training_data]
 y = [[tag2idx.get(m, 0) for m in row[2]] for row in training_data]
+
+# Get an idea about class dist.
+cnt = Counter()
+for labels in y:
+    cnt.update(labels)
+cnt_total = sum([v for _, v in cnt.items()])
+for k, v in cnt.items():
+    print("{0}: {1}".format(k, (100 * v)/cnt_total))
+        
 
 # Get a general idea of the lengths of the sequences:
 import matplotlib.pyplot as plt
@@ -124,7 +135,7 @@ y_test = [to_categorical(i, num_classes=n_tags) for i in y_test]
 
 #%%
 embeddings_dir = r'/home/ryan/Development/deep-learn-bio-nlp/'
-embedding_dim = 50
+embedding_dim = 256
 
 embeddings_index = {}
 with open(os.path.join(embeddings_dir, 'vectors_100K.txt')) as f:
@@ -151,8 +162,6 @@ for word, i in word2idx.items():
 # Borrowed heavily from 
 # https://appliedmachinelearning.blog/2019/04/01/training-deep-learning-based-named-entity-recognition-from-scratch-disease-extraction-hackathon/
 # as a general outline for the model...
-
-from keras.layers.merge import add
 
 _input = Input(shape=(max_len,))
 model = Embedding(input_dim=len(word2idx) + 1, 
@@ -201,7 +210,7 @@ plt.plot(epochs, loss, 'bo-', label='Training loss')
 plt.plot(epochs, val_loss, 'r+-', label='Validation loss')
 plt.title('Loss')
 plt.xlabel('Epochs')
-plt.ylabel('Accuracy')
+plt.ylabel('Loss')
 plt.legend()
 
 plt.show()
@@ -212,9 +221,6 @@ plt.show()
 #%%
 pred = model.predict(X_test)
 print(pred.shape)
-
-
-#%%
 pred_index = np.argmax(pred, axis=-1)
 print(pred_index.shape)
 
@@ -248,10 +254,11 @@ with open('{0}/ryan_eval.eval'.format(test_home), 'w') as mention_fh:
 #%% [markdown]
 # Using the BCII evaluation script, initial output on the test data is mixed (note that your output may vary). The precision is in the range of the shared task participants, but the recall leaves something to be desired -- especially the high number of false negatives (see https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2559986/). 
 # 
-#     TP: 4142
-#     FP: 1008
-#     FN: 2189
-#     Precision: 0.804271844660194 Recall: 0.654241036171221 F: 0.721539935545684
+#     TP: 4307
+#     FP: 1296
+#     FN: 2024
+#     Precision: 0.768695341781189 Recall: 0.680303269625652 F: 0.721803251215016
 # 
-# This F score isn't great, although it does place this system above the bottom 3 of 19 participants in the 2008 competition. Note that _only_ the training data was used (what the task describes as a _closed_ system), not using any outside resources. This is a good starting point.
+# This F score isn't bad, but is also isn't great. 
+# This score does place this system above the bottom 3 of 19 participants in the 2008 competition. Note that _only_ the training data was used (what the task describes as a _closed_ system), not using any outside resources. This is a good starting point.
 
